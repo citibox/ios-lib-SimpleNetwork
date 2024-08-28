@@ -1,0 +1,78 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-12
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v3
+    - name: Install SSH private key
+      uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ secrets.TECH_MOBILE_PRIVATE_SSH_KEY }}
+    - name: Bundle Install
+      run:  bundle install
+      env:
+        BUNDLE_GITHUB__COM: x-access-token:${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+    - name: Test
+      run: bundle exec fastlane ios test
+    - name: Archive Failed Tests
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: Failures
+        path: ./fastlane/test_output/report.html
+    - name: Upload Coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: Coverage
+        path: ./fastlane/CodeCoverage
+  coverage_badge:
+    name: Publish Code Coverage Badge
+    runs-on: ubuntu-latest
+    needs: test
+    if: success()
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v3
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '2.6' # Not needed with a .ruby-version file
+        # warnign: using gems cache is making it to fail, probably because gem.lock is not sync or something similar.
+        #bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+    - name: Download xcov report
+      uses: actions/download-artifact@v3
+      with:
+        name: Coverage
+    - name: Install Bundle
+      run: bundle install
+    - name: Code Coverage Badge
+      run: bundle exec fastlane ios coverage_badge
+    - name: 'Google Cloud Auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GC_DEV_CREDENTIALS }}'
+    - name: 'Google Cloud Upload Coverage File'
+      uses: 'google-github-actions/upload-cloud-storage@v0'
+      with:
+        path: './ios-network-coverage.svg'
+        destination: 'mobile-coverage'
+        headers: |-
+          cache-control: no-cache
+  purge_coverage_badge:
+    name: Purge Code Coverage Badge
+    runs-on: ubuntu-latest
+    needs: coverage_badge
+    if: success()
+    steps:
+    - name: Purge
+      run: |
+        curl -s https://github.com/citibox/ios-lib-network/blob/master/README.md > readme_temp
+        grep -Eo '<img src="[^"]+' readme_temp | grep camo | grep -Eo 'https[^"]+' | xargs -I {} curl -w "\n" -s -X PURGE {}

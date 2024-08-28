@@ -1,0 +1,68 @@
+fastlane_version "2.189.0"
+default_platform :ios
+
+platform :ios do
+  before_all do
+    setup_ci
+  end
+
+  lane :test do
+    scan(
+      package_path: ".",
+      scheme: "Network",
+      code_coverage: true,
+      output_types: "html",
+      skip_build: true,
+      clean: true,
+      device: "iPhone 14 Pro Max",
+      result_bundle: true,
+      output_directory: Dir.pwd + "/test_output"
+    )
+
+    xcov(
+      is_swift_package: true,
+      scheme: "Network",
+      xccov_file_direct_path: Dir.pwd + "/test_output/Network.xcresult",
+      output_directory: './fastlane/CodeCoverage',
+      include_targets: 'Network',
+      minimum_coverage_percentage: 80.0,
+      html_report: true,
+      json_report: true
+    )
+  end
+
+  # Coverage Badge
+  lane :coverage_badge do
+    coverage=getCoverage
+    createCoverageBadge(coverage)
+  end
+
+  def getCoverage
+    require 'json'
+
+    file = File.open "../report.json"
+    data = JSON.load file
+    cov = data["coverage"]
+    file.close
+    return cov
+  end
+
+  def createCoverageBadge(cov)
+    upper = 85
+    lower = 70
+    c = cov
+    c = c * 100
+    percentage = c.round(2).to_s
+    color = "brightgreen"
+    if c < lower
+      color = "red"
+    elsif c < upper
+      color = "yellow"
+    end
+
+    badgeURL = "https://img.shields.io/badge/coverage-#{percentage}%25-#{color}"
+    UI.message "#{badgeURL}"
+    
+    sh("curl #{badgeURL} > ../ios-network-coverage.svg")
+  end
+end

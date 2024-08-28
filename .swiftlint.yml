@@ -1,0 +1,6 @@
+included: # paths to include during linting. `--path` is ignored if present.
+  - ./Sources
+
+line_length:
+  warning: 150
+  error: 200
