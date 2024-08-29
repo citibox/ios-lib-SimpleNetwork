@@ -111,7 +111,6 @@ final class SimpleNetworkTests: XCTestCase {
     
     func testGetWithParamsAsync() async {
         let stubbed = stub(condition: isPath("/path/to/resource") && isMethodGET() && containsQueryParams(["key": "value"])) { request in
-            print("request: \(request)")
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
@@ -138,6 +137,84 @@ final class SimpleNetworkTests: XCTestCase {
         
         let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", parameters: ["key": "value"])
+
+        network.request(request) { response in
+            if let object: MockDataModel = try? response.result.get() {
+                XCTAssertEqual(object.data, "correct")
+            } else {
+                XCTFail("Wrong result")
+            }
+            
+            XCTAssertEqual(response.status, 200)
+        }
+        
+        HTTPStubs.removeStub(stubbed)
+    }
+    
+    @available(iOS 13.0.0, *)
+    func testPostAsyncEmptyResponse() async {
+        let stubbed = stub(condition: isPath("/path/to/resource") && isMethodPOST() && hasJsonBody(["key": "value"])) { request in
+            return HTTPStubsResponse(jsonObject: [:], statusCode: 204, headers: nil)
+        }
+        
+        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
+
+        let response: SNResponse<SNEmpty> = await network.request(request)
+        
+        XCTAssertEqual(response.status, 204)
+        
+        HTTPStubs.removeStub(stubbed)
+    }
+
+    func testPostEmptyResponse() {
+        let stubbed = stub(condition: isPath("/path/to/resource") && isMethodPOST() && hasJsonBody(["key": "value"])) { request in
+            return HTTPStubsResponse(jsonObject: [:], statusCode: 204, headers: nil)
+        }
+        
+        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
+
+        network.request(request) { response in
+            guard let object: SNEmpty = try? response.result.get() else {
+                XCTFail("Wrong result")
+                return
+            }
+            
+            XCTAssertEqual(response.status, 200)
+        }
+        
+        HTTPStubs.removeStub(stubbed)
+    }
+
+    func testPostWithResponseAsync() async {
+        let stubbed = stub(condition: isPath("/path/to/resource") && isMethodPOST() && hasJsonBody(["key": "value"])) { request in
+            return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
+        }
+        
+        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
+
+        let response: SNResponse<MockDataModel> = await network.request(request)
+        
+        XCTAssertEqual(response.status, 200)
+
+        if let object = try? response.result.get() {
+            XCTAssertEqual(object.data, "correct")
+        } else {
+            XCTFail("Wrong result")
+        }
+        
+        HTTPStubs.removeStub(stubbed)
+    }
+
+    func testPostWithResponse() {
+        let stubbed = stub(condition: isPath("/path/to/resource") && isMethodPOST()  && hasJsonBody(["key": "value"])) { request in
+            return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
+        }
+        
+        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
 
         network.request(request) { response in
             if let object: MockDataModel = try? response.result.get() {
