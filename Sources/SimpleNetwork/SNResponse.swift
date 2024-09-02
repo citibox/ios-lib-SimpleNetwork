@@ -8,11 +8,15 @@
 import Foundation
 
 public struct SNResponse<Object: Decodable> {
+    public var url: URL?
     public var result: Result<Object?, SNError>
     public var status: Int = 0
     public var headers: [SNHeader] = []
+    public var data: Data?
     
     internal init(data: Data, response: URLResponse?) {
+        self.url = response?.url
+        self.data = data
         if let httpResponse = response as? HTTPURLResponse {
             status = httpResponse.statusCode
             headers = httpResponse.allHeaderFields.map({ SNHeader(name: $0.key as? String ?? "", value: $0.value as? String ?? "") })
@@ -44,5 +48,11 @@ public struct SNResponse<Object: Decodable> {
         default:
             result = .failure(.unknown)
         }
+    }
+}
+
+extension SNResponse: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        "<SNResponse \(url?.debugDescription ?? "No URL!")\n\t\(status) - \(result)\n\tHeaders: \(headers)\n\tJSONData: \(( try? JSONSerialization.jsonObject(with: data ?? Data())) ?? "Empty")\n>"
     }
 }
