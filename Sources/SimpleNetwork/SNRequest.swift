@@ -26,14 +26,16 @@ public struct SNRequest {
 }
 
 extension SNRequest {
-    func urlRequest(base: URL) -> URLRequest {
-        var url = ignoreBase ? URL(string: path) ?? URL(string: "https://app.citibox.com")! : base
-        if !ignoreBase {
+    func urlRequest(base: URL? = nil) -> URLRequest {
+        var url: URL
+        if base != nil && !ignoreBase {
             if #available(iOS 16.0, *) {
-                url = url.appending(path: path)
+                url = base!.appending(path: path)
             } else {
-                url = url.appendingPathComponent(path)
+                url = base!.appendingPathComponent(path)
             }
+        } else {
+            url = URL(string: path) ?? URL(string: "https://\(path)") ?? URL(string: "https://app.citibox.com")!
         }
         
         var request = URLRequest(url: url)
@@ -59,7 +61,7 @@ extension SNRequest {
                     let urlString = url.absoluteString.appending("?\(parameters.query)")
                     request.url = URL(string: urlString)!
                 }
-            case .post:
+            case .post, .put:
                 request.httpBody = parameters.body
                 if headers["Content-Type"] == nil {
                     let contentType = SNHeader.contentType("application/json")

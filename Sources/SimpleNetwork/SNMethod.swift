@@ -12,4 +12,6 @@ public enum SNMethod: String {
     case get = "GET"
     /// `POST` method.
     case post = "POST"
+    /// `PUT` method.
+    case put = "PUT"
 }
