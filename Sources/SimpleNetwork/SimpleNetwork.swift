@@ -9,7 +9,8 @@ import Foundation
 
 public let version = "0.1.0"
 
-public class SimpleNetwork {
+/// Main network client
+public class SimpleNetworkManager {
     internal let base: URL?
     
     public var debug = false
@@ -18,3 +19,6 @@ public class SimpleNetwork {
         self.base = base
     }
 }
+
+@available(*, deprecated, renamed: "SimpleNetworkManager")
+public typealias SimpleNetwork = SimpleNetworkManager
