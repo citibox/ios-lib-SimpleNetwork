@@ -7,7 +7,7 @@
 
 import Foundation
 
-internal extension SimpleNetwork {
+internal extension SimpleNetworkManager {
     func printDebug(_ text: String) {
         guard debug else { return }
         print(text)

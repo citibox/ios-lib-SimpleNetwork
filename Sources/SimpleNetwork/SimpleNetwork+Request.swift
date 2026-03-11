@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension SimpleNetwork {
+extension SimpleNetworkManager {
     
     @available(iOS 13.0.0, *)
     public func request<O: Decodable>(_ request: SNRequest) async -> SNResponse<O> {
