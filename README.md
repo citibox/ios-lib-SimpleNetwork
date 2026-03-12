@@ -102,7 +102,7 @@ Configuración de peticiones:
 | Parámetro | Tipo | Descripción |
 |-----------|------|-------------|
 | `path` | `String` | Ruta del endpoint |
-| `method` | `SNMethod` | `.get`, `.post`, `.put` |
+| `method` | `SNMethod` | `.get`, `.post`, `.put`, `.delete`, `.patch`, `.head` |
 | `headers` | `[SNHeader]` | Headers HTTP personalizados |
 | `parameters` | `SNParameters?` | Parámetros para query (GET) o body (POST/PUT) |
 | `body` | `Data?` | Body raw para peticiones |
@@ -127,6 +127,7 @@ Errores posibles:
 - `.timeout` - Tiempo de espera agotado
 - `.noInternet` - Sin conexión a internet
 - `.cannotDecode` - Error decodificando la respuesta
+- `.invalidStatus(Int)` - Código HTTP no válido (fuera del rango 2xx o personalizado)
 
 ## SNHeader
 
@@ -156,6 +157,46 @@ Activa el modo debug para ver logs en consola:
 ```swift
 let network = SimpleNetworkManager(base: URL(string: "https://api.example.com")!)
 network.debug = true
+```
+
+## Retry automático
+
+Puedes configurar reintentos automáticos para errores de red (timeout, sin conexión, etc.):
+
+```swift
+// Reintentar hasta 3 veces con 1 segundo de delay entre intentos
+let response: SNResponse<User> = await network.request(
+    request,
+    retryCount: 3,
+    retryDelay: 1.0
+)
+```
+
+## Validación de status personalizada
+
+Por defecto, solo los códigos 2xx (200-299) se consideran exitosos. Puedes personalizar esto:
+
+```swift
+// Aceptar también códigos 404 como válidos
+let network = SimpleNetworkManager(
+    base: URL(string: "https://api.example.com")!,
+    validateStatus: { (200..<300).contains($0) || $0 == 404 }
+)
+```
+
+## Inyección de URLSession
+
+Para testing o configuraciones avanzadas, puedes inyectar tu propia URLSession:
+
+```swift
+let config = URLSessionConfiguration.default
+config.timeoutIntervalForRequest = 30
+let session = URLSession(configuration: config)
+
+let network = SimpleNetworkManager(
+    base: URL(string: "https://api.example.com")!,
+    session: session
+)
 ```
 
 ## Ejemplo completo
