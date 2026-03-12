@@ -14,12 +14,18 @@ public struct SNResponse<Object: Decodable> {
     public var headers: [SNHeader] = []
     public var data: Data?
     
-    internal init(data: Data, response: URLResponse?) {
+    internal init(data: Data, response: URLResponse?, validateStatus: (Int) -> Bool = { (200..<300).contains($0) }) {
         self.url = response?.url
         self.data = data
         if let httpResponse = response as? HTTPURLResponse {
             status = httpResponse.statusCode
             headers = httpResponse.allHeaderFields.map({ SNHeader(name: $0.key as? String ?? "", value: $0.value as? String ?? "") })
+        }
+        
+        // Check if status is valid
+        if !validateStatus(status) {
+            result = .failure(.invalidStatus(status))
+            return
         }
         
         let decoder = JSONDecoder()

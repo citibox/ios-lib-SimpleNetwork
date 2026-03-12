@@ -11,11 +11,11 @@ public struct SNRequest {
     public var path: String
     public var method: SNMethod
     public var headers: [SNHeader]
-    public var parameters: SNParameters?
+    public var parameters: SNParametersProtocol?
     public var body: Data?
     public var ignoreBase: Bool
     
-    public init(path: String, method: SNMethod = .get, headers: [SNHeader] = [], parameters: SNParameters? = nil, body: Data? = nil, ignoreBase: Bool = false) {
+    public init(path: String, method: SNMethod = .get, headers: [SNHeader] = [], parameters: SNParametersProtocol? = nil, body: Data? = nil, ignoreBase: Bool = false) {
         self.path = path
         self.method = method
         self.headers = headers
@@ -61,13 +61,16 @@ extension SNRequest {
                     let urlString = url.absoluteString.appending("?\(parameters.query)")
                     request.url = URL(string: urlString)!
                 }
-            case .post, .put:
+            case .post, .put, .patch, .delete:
                 request.httpBody = parameters.body
                 if headers["Content-Type"] == nil {
                     let contentType = SNHeader.contentType("application/json")
                     request.addValue(contentType.value, forHTTPHeaderField: contentType.name)
                 }
-            }
+            case .head:
+                // HEAD requests don't have body
+                break
+
         } else if let body = body {
             request.httpBody = body
             if headers["Content-Type"] == nil {

@@ -14,4 +14,10 @@ public enum SNMethod: String {
     case post = "POST"
     /// `PUT` method.
     case put = "PUT"
+    /// `DELETE` method.
+    case delete = "DELETE"
+    /// `PATCH` method.
+    case patch = "PATCH"
+    /// `HEAD` method.
+    case head = "HEAD"
 }
