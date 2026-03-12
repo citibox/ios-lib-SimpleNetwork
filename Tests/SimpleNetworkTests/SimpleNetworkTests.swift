@@ -11,7 +11,6 @@ import OHHTTPStubsSwift
 @testable import SimpleNetwork
 
 final class SimpleNetworkTests: XCTestCase {
-    @available(iOS 13.0.0, *)
     func testHeadersAsync() async {
         let stubbed = stub(condition: isPath("/path/to/resource") && isMethodGET() && hasHeaderNamed("Authorization", value: "Bearer 4U7H-70K3N")) { request in
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: ["Content-Type": "application/json"])
@@ -66,7 +65,6 @@ final class SimpleNetworkTests: XCTestCase {
         HTTPStubs.removeStub(stubbed)
     }
     
-    @available(iOS 13.0.0, *)
     func testGetAsync() async {
         let stubbed = stub(condition: isPath("/path/to/resource") && isMethodGET()) { request in
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
@@ -109,7 +107,6 @@ final class SimpleNetworkTests: XCTestCase {
         HTTPStubs.removeStub(stubbed)
     }
     
-    @available(iOS 13.0.0, *)
     func testGetWithParamsAsync() async {
         let stubbed = stub(condition: isPath("/path/to/resource") && isMethodGET() && containsQueryParams(["key": "value"])) { request in
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
@@ -152,7 +149,6 @@ final class SimpleNetworkTests: XCTestCase {
         HTTPStubs.removeStub(stubbed)
     }
     
-    @available(iOS 13.0.0, *)
     func testPostAsyncEmptyResponse() async {
         let stubbed = stub(condition: isPath("/path/to/resource") && isMethodPOST() && hasJsonBody(["key": "value"])) { request in
             return HTTPStubsResponse(jsonObject: [:], statusCode: 204, headers: nil)
@@ -182,7 +178,7 @@ final class SimpleNetworkTests: XCTestCase {
                 return
             }
             
-            XCTAssertEqual(response.status, 200)
+            XCTAssertEqual(response.status, 204)
         }
         
         HTTPStubs.removeStub(stubbed)
