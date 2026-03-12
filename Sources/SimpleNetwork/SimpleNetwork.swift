@@ -19,6 +19,3 @@ public class SimpleNetworkManager {
         self.base = base
     }
 }
-
-@available(*, deprecated, renamed: "SimpleNetworkManager")
-public typealias SimpleNetwork = SimpleNetworkManager
