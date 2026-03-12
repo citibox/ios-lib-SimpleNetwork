@@ -55,14 +55,11 @@ extension SNRequest {
         if let parameters = parameters {
             switch method {
             case .get:
-                if #available(iOS 16.0, *) {
-                    request.url = url.appending(queryItems: parameters.queryItems)
-                } else {
-                    let urlString = url.absoluteString.appending("?\(parameters.query)")
-                    request.url = URL(string: urlString)!
-                }
+                var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+                components.queryItems = parameters.queryItems.isEmpty ? nil : parameters.queryItems
+                request.url = components.url!
             case .post, .put, .patch, .delete:
-                request.httpBody = parameters.body
+                request.httpBody = try? parameters.encode()
                 if headers["Content-Type"] == nil {
                     let contentType = SNHeader.contentType("application/json")
                     request.addValue(contentType.value, forHTTPHeaderField: contentType.name)
@@ -70,6 +67,7 @@ extension SNRequest {
             case .head:
                 // HEAD requests don't have body
                 break
+            }
 
         } else if let body = body {
             request.httpBody = body
@@ -85,6 +83,6 @@ extension SNRequest {
 
 extension SNRequest: CustomDebugStringConvertible {
     public var debugDescription: String {
-        "<SNRequest\n\t\(method.rawValue) \(path)\n\tHeaders: \(headers)\n\tParameters: \(parameters?.debugDescription ?? "Empty")\n\tbody: \(body?.debugDescription ?? "Empty")\n>"
+        "<SNRequest\n\t\(method.rawValue) \(path)\n\tHeaders: \(headers)\n\tParameters: \(parameters != nil ? "Present" : "Empty")\n\tbody: \(body?.debugDescription ?? "Empty")\n>"
     }
 }

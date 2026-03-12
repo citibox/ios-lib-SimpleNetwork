@@ -133,6 +133,9 @@ extension SimpleNetworkManager {
     
     private func shouldRetry(error: Error) -> Bool {
         let nsError = error as NSError
+        guard nsError.domain == NSURLErrorDomain else {
+            return false
+        }
         switch nsError.code {
         case NSURLErrorTimedOut,
              NSURLErrorNetworkConnectionLost,
