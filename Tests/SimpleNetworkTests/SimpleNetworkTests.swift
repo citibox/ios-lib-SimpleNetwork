@@ -17,7 +17,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: ["Content-Type": "application/json"])
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(
             path: "path/to/resource",
             headers: [
@@ -44,7 +44,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: ["Content-Type": "application/json"])
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(
             path: "path/to/resource",
             headers: [
@@ -72,7 +72,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource")
 
         let response: SNResponse<MockDataModel> = await network.request(request)
@@ -93,7 +93,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource")
 
         network.request(request) { response in
@@ -109,12 +109,13 @@ final class SimpleNetworkTests: XCTestCase {
         HTTPStubs.removeStub(stubbed)
     }
     
+    @available(iOS 13.0.0, *)
     func testGetWithParamsAsync() async {
         let stubbed = stub(condition: isPath("/path/to/resource") && isMethodGET() && containsQueryParams(["key": "value"])) { request in
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", parameters: ["key": "value"])
 
         let response: SNResponse<MockDataModel> = await network.request(request)
@@ -135,7 +136,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", parameters: ["key": "value"])
 
         network.request(request) { response in
@@ -157,7 +158,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: [:], statusCode: 204, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
 
         let response: SNResponse<SNEmpty> = await network.request(request)
@@ -172,7 +173,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: [:], statusCode: 204, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
 
         network.request(request) { response in
@@ -192,7 +193,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
 
         let response: SNResponse<MockDataModel> = await network.request(request)
@@ -213,7 +214,7 @@ final class SimpleNetworkTests: XCTestCase {
             return HTTPStubsResponse(jsonObject: ["data": "correct"], statusCode: 200, headers: nil)
         }
         
-        let network = SimpleNetwork(base: URL(string: "https://test.citibox.com")!)
+        let network = SimpleNetworkManager(base: URL(string: "https://test.citibox.com")!)
         let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
 
         network.request(request) { response in
