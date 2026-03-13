@@ -55,9 +55,11 @@ extension SNRequest {
         if let parameters = parameters {
             switch method {
             case .get:
-                var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-                components.queryItems = parameters.queryItems.isEmpty ? nil : parameters.queryItems
-                request.url = components.url!
+                if var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                   !parameters.queryItems.isEmpty {
+                    components.queryItems = parameters.queryItems
+                    request.url = components.url ?? url
+                }
             case .post, .put, .patch, .delete:
                 request.httpBody = try? parameters.encode()
                 if headers["Content-Type"] == nil {

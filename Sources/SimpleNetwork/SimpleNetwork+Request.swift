@@ -33,9 +33,10 @@ extension SimpleNetworkManager {
             }
             
             // Check if status code is valid
-            if !validateStatus(httpResponse.statusCode) && retryCount > 0 {
+            if !validateStatus(httpResponse.statusCode) && retryCount > 0 && shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
                 printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
-                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
+                let clampedDelay = max(0, retryDelay)
+                try await Task.sleep(nanoseconds: UInt64(clampedDelay * 1_000_000_000))
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
             
@@ -50,7 +51,8 @@ extension SimpleNetworkManager {
             // Check if we should retry
             if retryCount > 0 && shouldRetry(error: error) {
                 printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
-                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
+                let clampedDelay = max(0, retryDelay)
+                try await Task.sleep(nanoseconds: UInt64(clampedDelay * 1_000_000_000))
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
             
@@ -75,15 +77,15 @@ extension SimpleNetworkManager {
         retryDelay: TimeInterval,
         result: @escaping (SNResponse<O>) -> Void
     ) {
-        let task = session.dataTask(with: request.urlRequest(base: base)) { [weak self] data, response, error in
-            guard let self = self else { return }
+        let task = session.dataTask(with: request.urlRequest(base: base)) { data, response, error in
             
             // Handle network error
             if let error = error {
                 // Check if we should retry
                 if retryCount > 0 && self.shouldRetry(error: error) {
                     self.printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
-                    DispatchQueue.global().asyncAfter(deadline: .now() + retryDelay) {
+                    let clampedDelay = max(0, retryDelay)
+                    DispatchQueue.global().asyncAfter(deadline: .now() + clampedDelay) {
                         self.performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay, result: result)
                     }
                     return
@@ -103,18 +105,14 @@ extension SimpleNetworkManager {
                 return
             }
             
-            // Handle missing data
-            guard let data = data else {
-                let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
-                self.printDebug("Received response\n\(resp.debugDescription)")
-                result(resp)
-                return
-            }
+            // Handle missing data (treat nil as empty)
+            let data = data ?? Data()
             
             // Check if status code is valid and retry if needed
-            if !self.validateStatus(httpResponse.statusCode) && retryCount > 0 {
+            if !self.validateStatus(httpResponse.statusCode) && retryCount > 0 && self.shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
                 self.printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
-                DispatchQueue.global().asyncAfter(deadline: .now() + retryDelay) {
+                let clampedDelay = max(0, retryDelay)
+                DispatchQueue.global().asyncAfter(deadline: .now() + clampedDelay) {
                     self.performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay, result: result)
                 }
                 return
@@ -129,6 +127,13 @@ extension SimpleNetworkManager {
             result(resp)
         }
         task.resume()
+    }
+    
+    private func shouldRetryOnStatus(_ code: Int, method: SNMethod) -> Bool {
+        guard [408, 429].contains(code) || (500...599).contains(code) else { return false }
+        
+        let idempotentMethods: Set<SNMethod> = [.get, .head, .put, .delete]
+        return idempotentMethods.contains(method)
     }
     
     private func shouldRetry(error: Error) -> Bool {
