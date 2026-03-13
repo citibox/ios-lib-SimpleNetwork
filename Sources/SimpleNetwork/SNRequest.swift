@@ -54,10 +54,12 @@ extension SNRequest {
         //print("Header fields: \(request.allHTTPHeaderFields)")
         if let parameters = parameters {
             switch method {
-            case .get:
+            case .get, .head:
                 if var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                    !parameters.queryItems.isEmpty {
-                    components.queryItems = parameters.queryItems
+                    var queryItems = components.queryItems ?? []
+                    queryItems.append(contentsOf: parameters.queryItems)
+                    components.queryItems = queryItems
                     request.url = components.url ?? url
                 }
             case .post, .put, .patch, .delete:
@@ -66,9 +68,7 @@ extension SNRequest {
                     let contentType = SNHeader.contentType("application/json")
                     request.addValue(contentType.value, forHTTPHeaderField: contentType.name)
                 }
-            case .head:
-                // HEAD requests don't have body
-                break
+
             }
 
         } else if let body = body {

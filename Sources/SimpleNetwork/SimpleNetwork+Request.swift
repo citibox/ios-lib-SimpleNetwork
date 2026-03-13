@@ -36,7 +36,8 @@ extension SimpleNetworkManager {
             if !validateStatus(httpResponse.statusCode) && retryCount > 0 && shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
                 printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
                 let clampedDelay = max(0, retryDelay)
-                try await Task.sleep(nanoseconds: UInt64(clampedDelay * 1_000_000_000))
+                let nanos = UInt64(clampedDelay * 1_000_000_000)
+                try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
             
@@ -52,7 +53,8 @@ extension SimpleNetworkManager {
             if retryCount > 0 && shouldRetry(error: error) {
                 printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
                 let clampedDelay = max(0, retryDelay)
-                try await Task.sleep(nanoseconds: UInt64(clampedDelay * 1_000_000_000))
+                let nanos = UInt64(clampedDelay * 1_000_000_000)
+                try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
             

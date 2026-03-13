@@ -13,19 +13,7 @@ public protocol SNParametersProtocol {
     var queryItems: [URLQueryItem] { get }
 }
 
-extension SNParametersProtocol where Self: Encodable {
-    public func encode() throws -> Data {
-        try JSONEncoder().encode(self)
-    }
-    
-    public var queryItems: [URLQueryItem] {
-        guard let dict = try? JSONEncoder().encode(self),
-              let json = try? JSONSerialization.jsonObject(with: dict) as? [String: Any] else {
-            return []
-        }
-        return json.map { URLQueryItem(name: $0.key, value: String(describing: $0.value)) }
-    }
-}
+
 
 /// Simple dictionary-based parameters
 public typealias SNParameters = [String: String]

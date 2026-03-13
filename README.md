@@ -104,7 +104,7 @@ Configuración de peticiones:
 | `path` | `String` | Ruta del endpoint |
 | `method` | `SNMethod` | `.get`, `.post`, `.put`, `.delete`, `.patch`, `.head` |
 | `headers` | `[SNHeader]` | Headers HTTP personalizados |
-| `parameters` | `SNParametersProtocol?` | Parámetros para query (GET/HEAD) o body (POST/PUT/PATCH/DELETE) |
+| `parameters` | `SNParametersProtocol?` | Parámetros simples: `SNParameters([String: String])`. Custom structs: implementa `SNParametersProtocol` manualmente. Query (GET/HEAD), body (POST/PUT/PATCH/DELETE). |
 | `body` | `Data?` | Body raw para peticiones |
 | `ignoreBase` | `Bool` | Ignora la URL base si es `true` |
 
