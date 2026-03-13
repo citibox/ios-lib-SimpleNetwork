@@ -33,7 +33,7 @@ public struct SNResponse<Object: Decodable> {
             do {
                 let object = try decoder.decode(Object.self, from: data)
                 result = .success(object)
-            } catch(let decodingError) {
+            } catch {
                 result = .failure(.cannotDecode)
             }
         } else {

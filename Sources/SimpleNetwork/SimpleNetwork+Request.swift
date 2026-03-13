@@ -54,7 +54,11 @@ extension SimpleNetworkManager {
                 printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
                 let clampedDelay = max(0, retryDelay)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
-                try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
+                do {
+                    try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
+                } catch {
+                    printDebug("Retry sleep cancelled, returning error")
+                }
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
             
