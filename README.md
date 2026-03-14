@@ -40,7 +40,12 @@ struct User: Decodable {
     let name: String
 }
 
-let request = SNRequest(path: "/users/1")
+// Con base URL: usa path relativo (sin leading /)
+let request = SNRequest(path: "users/1")
+
+// Sin base URL: usa URL completa
+let request = SNRequest(path: "https://api.example.com/users/1")
+
 let response: SNResponse<User> = await network.request(request)
 
 switch response.result {
@@ -68,7 +73,7 @@ network.request(request) { (response: SNResponse<User>) in
 
 ```swift
 let request = SNRequest(
-    path: "/users",
+    path: "users",
     method: .post,
     parameters: ["name": "John", "email": "john@example.com"]
 )
@@ -80,7 +85,7 @@ let response: SNResponse<User> = await network.request(request)
 
 ```swift
 let request = SNRequest(
-    path: "/protected",
+    path: "protected",
     headers: [
         .authorization(bearerToken: "tu-token-aqui"),
         .contentType("application/json")
@@ -91,7 +96,7 @@ let request = SNRequest(
 ### Respuesta vacía (204 No Content)
 
 ```swift
-let request = SNRequest(path: "/logout", method: .post)
+let request = SNRequest(path: "logout", method: .post)
 let response: SNResponse<SNEmpty> = await network.request(request)
 ```
 
@@ -101,7 +106,7 @@ Configuración de peticiones:
 
 | Parámetro | Tipo | Descripción |
 |-----------|------|-------------|
-| `path` | `String` | Ruta del endpoint |
+| `path` | `String` | Ruta del endpoint. **Usa paths relativos** (sin leading `/`) cuando proporcionas `base`, o URLs completas si `base` es `nil`. |
 | `method` | `SNMethod` | `.get`, `.post`, `.put`, `.delete`, `.patch`, `.head` |
 | `headers` | `[SNHeader]` | Headers HTTP personalizados |
 | `parameters` | `SNParametersProtocol?` | Parámetros simples: `SNParameters([String: String])`. Custom structs: implementa `SNParametersProtocol` manualmente. Query (GET/HEAD), body (POST/PUT/PATCH/DELETE). |
@@ -211,7 +216,7 @@ final class UserService {
     
     func fetchUser(id: Int) async -> User? {
         let request = SNRequest(
-            path: "/users/\(id)",
+            path: "users/\(id)",
             headers: [.authorization(bearerToken: getToken())]
         )
         
@@ -228,7 +233,7 @@ final class UserService {
     
     func createUser(name: String, email: String) async -> Bool {
         let request = SNRequest(
-            path: "/users",
+            path: "users",
             method: .post,
             headers: [
                 .authorization(bearerToken: getToken()),
