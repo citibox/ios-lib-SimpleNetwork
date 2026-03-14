@@ -20,7 +20,11 @@ public typealias SNParameters = [String: String]
 
 extension SNParameters: SNParametersProtocol {
     public func encode() throws -> Data {
-        try JSONSerialization.data(withJSONObject: self)
+        do {
+            return try JSONSerialization.data(withJSONObject: self)
+        } catch {
+            throw SNError.encodingFailed
+        }
     }
     
     public var queryItems: [URLQueryItem] {

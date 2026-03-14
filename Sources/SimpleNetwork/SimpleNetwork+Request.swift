@@ -35,6 +35,7 @@ extension SimpleNetworkManager {
             // Check if status code is valid
             if !validateStatus(httpResponse.statusCode) && retryCount > 0 && shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
                 printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
+                guard retryDelay.isFinite else { return SNResponse(error: SNError.invalidURL) }
                 let clampedDelay = min(max(0, retryDelay), 60.0)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
                 try await Task.sleep(nanoseconds: nanos)
@@ -52,6 +53,7 @@ extension SimpleNetworkManager {
             // Check if we should retry
             if retryCount > 0 && shouldRetry(error: error) {
                 printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
+                guard retryDelay.isFinite else { return SNResponse(error: SNError.invalidURL) }
                 let clampedDelay = min(max(0, retryDelay), 60.0)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
                 do {
@@ -95,7 +97,8 @@ extension SimpleNetworkManager {
                 // Check if we should retry
                 if retryCount > 0 && self.shouldRetry(error: error) {
                     self.printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
-                    let clampedDelay = max(0, retryDelay)
+                    guard retryDelay.isFinite else { return }
+                    let clampedDelay = min(max(0, retryDelay), 60.0)
                     DispatchQueue.global().asyncAfter(deadline: .now() + clampedDelay) {
                         self.performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay, result: result)
                     }

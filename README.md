@@ -133,6 +133,8 @@ Errores posibles:
 - `.noInternet` - Sin conexión a internet
 - `.cannotDecode` - Error decodificando la respuesta
 - `.invalidStatus(Int)` - Código HTTP no válido (fuera del rango 2xx o personalizado)
+- `.encodingFailed` - Error al codificar los parámetros (ej: JSON inválido)
+- `.invalidURL` - URL inválida o no parseable (ej: path vacío o con caracteres inválidos)
 
 ## SNHeader
 
