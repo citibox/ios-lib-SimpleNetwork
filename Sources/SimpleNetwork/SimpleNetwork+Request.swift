@@ -57,7 +57,10 @@ extension SimpleNetworkManager {
                 do {
                     try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
                 } catch {
-                    printDebug("Retry sleep cancelled, returning error")
+                    // If sleep was cancelled (task cancellation), bail out instead of retrying
+                    printDebug("Retry sleep cancelled, bailing out")
+                    let resp: SNResponse<O> = SNResponse(error: error)
+                    return resp
                 }
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
@@ -83,7 +86,9 @@ extension SimpleNetworkManager {
         retryDelay: TimeInterval,
         result: @escaping (SNResponse<O>) -> Void
     ) {
-        let task = session.dataTask(with: request.urlRequest(base: base)) { data, response, error in
+        do {
+            let urlRequest = try request.urlRequest(base: base)
+            let task = session.dataTask(with: urlRequest) { data, response, error in
             
             // Handle network error
             if let error = error {

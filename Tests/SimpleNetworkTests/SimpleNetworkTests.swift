@@ -183,7 +183,7 @@ final class SimpleNetworkTests: XCTestCase {
         let request = SNRequest(path: "path/to/resource", method: .post, parameters: ["key": "value"])
 
         network.request(request) { response in
-            guard let object: SNEmpty = try? response.result.get() else {
+            guard (try? response.result.get() as SNEmpty?) != nil else {
                 XCTFail("Wrong result")
                 expectation.fulfill()
                 return

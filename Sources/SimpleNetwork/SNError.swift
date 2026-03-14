@@ -14,4 +14,5 @@ public enum SNError: Error {
     case noInternet
     case cannotDecode
     case invalidStatus(Int)
+    case encodingFailed
 }

@@ -26,7 +26,7 @@ public struct SNRequest {
 }
 
 extension SNRequest {
-    func urlRequest(base: URL? = nil) -> URLRequest {
+    func urlRequest(base: URL? = nil) throws -> URLRequest {
         var url: URL
         if base != nil && !ignoreBase {
             if #available(iOS 16.0, *) {
@@ -63,7 +63,7 @@ extension SNRequest {
                     request.url = components.url ?? url
                 }
             case .post, .put, .patch, .delete:
-                request.httpBody = try? parameters.encode()
+                request.httpBody = try parameters.encode()
                 if headers["Content-Type"] == nil {
                     let contentType = SNHeader.contentType("application/json")
                     request.addValue(contentType.value, forHTTPHeaderField: contentType.name)
