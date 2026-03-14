@@ -35,7 +35,10 @@ extension SNRequest {
                 url = base!.appendingPathComponent(path)
             }
         } else {
-            url = URL(string: path) ?? URL(string: "https://\(path)") ?? URL(string: "https://app.citibox.com")!
+            guard let parsedURL = URL(string: path) ?? URL(string: "https://\(path)") else {
+                throw SNError.invalidURL
+            }
+            url = parsedURL
         }
         
         var request = URLRequest(url: url)

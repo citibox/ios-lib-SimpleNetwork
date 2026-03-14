@@ -15,4 +15,5 @@ public enum SNError: Error {
     case cannotDecode
     case invalidStatus(Int)
     case encodingFailed
+    case invalidURL
 }
