@@ -135,6 +135,7 @@ Errores posibles:
 - `.invalidStatus(Int)` - Código HTTP no válido (fuera del rango 2xx o personalizado)
 - `.encodingFailed` - Error al codificar los parámetros (ej: JSON inválido)
 - `.invalidURL` - URL inválida o no parseable (ej: path vacío o con caracteres inválidos)
+- `.invalidRetryDelay` - retryDelay inválido (NaN, infinito o negativo)
 
 ## SNHeader
 

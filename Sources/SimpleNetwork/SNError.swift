@@ -16,4 +16,5 @@ public enum SNError: Error {
     case invalidStatus(Int)
     case encodingFailed
     case invalidURL
+    case invalidRetryDelay
 }
