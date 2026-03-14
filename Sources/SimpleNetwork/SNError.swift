@@ -13,4 +13,8 @@ public enum SNError: Error {
     case timeout
     case noInternet
     case cannotDecode
+    case invalidStatus(Int)
+    case encodingFailed
+    case invalidURL
+    case invalidRetryDelay
 }

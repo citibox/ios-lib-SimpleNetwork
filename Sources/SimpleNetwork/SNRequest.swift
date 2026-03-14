@@ -11,11 +11,11 @@ public struct SNRequest {
     public var path: String
     public var method: SNMethod
     public var headers: [SNHeader]
-    public var parameters: SNParameters?
+    public var parameters: SNParametersProtocol?
     public var body: Data?
     public var ignoreBase: Bool
     
-    public init(path: String, method: SNMethod = .get, headers: [SNHeader] = [], parameters: SNParameters? = nil, body: Data? = nil, ignoreBase: Bool = false) {
+    public init(path: String, method: SNMethod = .get, headers: [SNHeader] = [], parameters: SNParametersProtocol? = nil, body: Data? = nil, ignoreBase: Bool = false) {
         self.path = path
         self.method = method
         self.headers = headers
@@ -26,7 +26,7 @@ public struct SNRequest {
 }
 
 extension SNRequest {
-    func urlRequest(base: URL? = nil) -> URLRequest {
+    func urlRequest(base: URL? = nil) throws -> URLRequest {
         var url: URL
         if base != nil && !ignoreBase {
             if #available(iOS 16.0, *) {
@@ -35,7 +35,10 @@ extension SNRequest {
                 url = base!.appendingPathComponent(path)
             }
         } else {
-            url = URL(string: path) ?? URL(string: "https://\(path)") ?? URL(string: "https://app.citibox.com")!
+            guard let parsedURL = URL(string: path) ?? URL(string: "https://\(path)") else {
+                throw SNError.invalidURL
+            }
+            url = parsedURL
         }
         
         var request = URLRequest(url: url)
@@ -54,20 +57,23 @@ extension SNRequest {
         //print("Header fields: \(request.allHTTPHeaderFields)")
         if let parameters = parameters {
             switch method {
-            case .get:
-                if #available(iOS 16.0, *) {
-                    request.url = url.appending(queryItems: parameters.queryItems)
-                } else {
-                    let urlString = url.absoluteString.appending("?\(parameters.query)")
-                    request.url = URL(string: urlString)!
+            case .get, .head:
+                if var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                   !parameters.queryItems.isEmpty {
+                    var queryItems = components.queryItems ?? []
+                    queryItems.append(contentsOf: parameters.queryItems)
+                    components.queryItems = queryItems
+                    request.url = components.url ?? url
                 }
-            case .post, .put:
-                request.httpBody = parameters.body
+            case .post, .put, .patch, .delete:
+                request.httpBody = try parameters.encode()
                 if headers["Content-Type"] == nil {
                     let contentType = SNHeader.contentType("application/json")
                     request.addValue(contentType.value, forHTTPHeaderField: contentType.name)
                 }
+
             }
+
         } else if let body = body {
             request.httpBody = body
             if headers["Content-Type"] == nil {
@@ -82,6 +88,6 @@ extension SNRequest {
 
 extension SNRequest: CustomDebugStringConvertible {
     public var debugDescription: String {
-        "<SNRequest\n\t\(method.rawValue) \(path)\n\tHeaders: \(headers)\n\tParameters: \(parameters?.debugDescription ?? "Empty")\n\tbody: \(body?.debugDescription ?? "Empty")\n>"
+        "<SNRequest\n\t\(method.rawValue) \(path)\n\tHeaders: \(headers)\n\tParameters: \(parameters != nil ? "Present" : "Empty")\n\tbody: \(body?.debugDescription ?? "Empty")\n>"
     }
 }

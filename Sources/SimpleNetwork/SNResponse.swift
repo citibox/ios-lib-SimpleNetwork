@@ -14,7 +14,7 @@ public struct SNResponse<Object: Decodable> {
     public var headers: [SNHeader] = []
     public var data: Data?
     
-    internal init(data: Data, response: URLResponse?) {
+    internal init(data: Data, response: URLResponse?, validateStatus: (Int) -> Bool = { (200..<300).contains($0) }) {
         self.url = response?.url
         self.data = data
         if let httpResponse = response as? HTTPURLResponse {
@@ -22,12 +22,18 @@ public struct SNResponse<Object: Decodable> {
             headers = httpResponse.allHeaderFields.map({ SNHeader(name: $0.key as? String ?? "", value: $0.value as? String ?? "") })
         }
         
+        // Check if status is valid
+        if !validateStatus(status) {
+            result = .failure(.invalidStatus(status))
+            return
+        }
+        
         let decoder = JSONDecoder()
         if Object.self != SNEmpty.self {
             do {
                 let object = try decoder.decode(Object.self, from: data)
                 result = .success(object)
-            } catch(let decodingError) {
+            } catch {
                 result = .failure(.cannotDecode)
             }
         } else {
@@ -36,6 +42,12 @@ public struct SNResponse<Object: Decodable> {
     }
     
     internal init(error: Error) {
+        // If it's already an SNError, use it directly
+        if let snError = error as? SNError {
+            result = .failure(snError)
+            return
+        }
+        
         switch (error as NSError).code {
         case NSURLErrorNotConnectedToInternet:
             result = .failure(.noInternet)

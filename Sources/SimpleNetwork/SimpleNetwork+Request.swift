@@ -9,35 +9,173 @@ import Foundation
 
 extension SimpleNetworkManager {
     
-    public func request<O: Decodable>(_ request: SNRequest) async -> SNResponse<O> {
+    public func request<O: Decodable>(
+        _ request: SNRequest,
+        retryCount: Int = 0,
+        retryDelay: TimeInterval = 1.0
+    ) async -> SNResponse<O> {
+        return await performRequest(request, retryCount: retryCount, retryDelay: retryDelay)
+    }
+    
+    private func performRequest<O: Decodable>(
+        _ request: SNRequest,
+        retryCount: Int,
+        retryDelay: TimeInterval
+    ) async -> SNResponse<O> {
         do {
             printDebug("Making request\n\(request.debugDescription)")
-            let (data, response) = try await URLSession.shared.data(for: request.urlRequest(base: base))
-            let resp: SNResponse<O> = SNResponse(data: data, response: response)
+            let (data, response) = try await session.data(for: request.urlRequest(base: base))
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
+                printDebug("Received response\n\(resp.debugDescription)")
+                return resp
+            }
+            
+            // Check if status code is valid
+            if !validateStatus(httpResponse.statusCode) && retryCount > 0 && shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
+                printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
+                guard retryDelay.isFinite else { return SNResponse(error: SNError.invalidRetryDelay) }
+                let clampedDelay = min(max(0, retryDelay), 60.0)
+                let nanos = UInt64(clampedDelay * 1_000_000_000)
+                try await Task.sleep(nanoseconds: nanos)
+                return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
+            }
+            
+            let resp: SNResponse<O> = SNResponse(
+                data: data,
+                response: response,
+                validateStatus: validateStatus
+            )
             printDebug("Received response\n\(resp.debugDescription)")
             return resp
         } catch(let error) {
-            //print("Error: \(error.localizedDescription)")
+            // Check if we should retry
+            if retryCount > 0 && shouldRetry(error: error) {
+                printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
+                guard retryDelay.isFinite else { return SNResponse(error: SNError.invalidRetryDelay) }
+                let clampedDelay = min(max(0, retryDelay), 60.0)
+                let nanos = UInt64(clampedDelay * 1_000_000_000)
+                do {
+                    try await Task.sleep(nanoseconds: nanos)
+                } catch {
+                    // If sleep was cancelled (task cancellation), bail out instead of retrying
+                    printDebug("Retry sleep cancelled, bailing out")
+                    let resp: SNResponse<O> = SNResponse(error: error)
+                    return resp
+                }
+                return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
+            }
+            
             let resp: SNResponse<O> = SNResponse(error: error)
             printDebug("Received response\n\(resp.debugDescription)")
             return resp
         }
     }
     
-    public func request<O: Decodable>(_ request: SNRequest, result: @escaping (SNResponse<O>) -> Void) {
-        let task = URLSession.shared.dataTask(with: request.urlRequest(base: base)) { data, response, error in
+    public func request<O: Decodable>(
+        _ request: SNRequest,
+        retryCount: Int = 0,
+        retryDelay: TimeInterval = 1.0,
+        result: @escaping (SNResponse<O>) -> Void
+    ) {
+        performRequest(request, retryCount: retryCount, retryDelay: retryDelay, result: result)
+    }
+    
+    private func performRequest<O: Decodable>(
+        _ request: SNRequest,
+        retryCount: Int,
+        retryDelay: TimeInterval,
+        result: @escaping (SNResponse<O>) -> Void
+    ) {
+        do {
+            let urlRequest = try request.urlRequest(base: base)
+            let task = session.dataTask(with: urlRequest) { data, response, error in
+            
+            // Handle network error
             if let error = error {
-                //print("Error: \(error.localizedDescription)")
+                // Check if we should retry
+                if retryCount > 0 && self.shouldRetry(error: error) {
+                    self.printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
+                    guard retryDelay.isFinite else {
+                        let resp: SNResponse<O> = SNResponse(error: SNError.invalidRetryDelay)
+                        result(resp)
+                        return
+                    }
+                    let clampedDelay = min(max(0, retryDelay), 60.0)
+                    DispatchQueue.global().asyncAfter(deadline: .now() + clampedDelay) {
+                        self.performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay, result: result)
+                    }
+                    return
+                }
+                
                 let resp: SNResponse<O> = SNResponse(error: error)
                 self.printDebug("Received response\n\(resp.debugDescription)")
                 result(resp)
-            } else if let data = data {
-                //print("Data received: \(data)")
-                let resp: SNResponse<O> = SNResponse(data: data, response: response)
+                return
+            }
+            
+            // Handle missing response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
                 self.printDebug("Received response\n\(resp.debugDescription)")
                 result(resp)
+                return
             }
+            
+            // Handle missing data (treat nil as empty)
+            let data = data ?? Data()
+            
+            // Check if status code is valid and retry if needed
+            if !self.validateStatus(httpResponse.statusCode) && retryCount > 0 && self.shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
+                self.printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
+                guard retryDelay.isFinite else {
+                    let resp: SNResponse<O> = SNResponse(error: SNError.invalidRetryDelay)
+                    result(resp)
+                    return
+                }
+                let clampedDelay = min(max(0, retryDelay), 60.0)
+                DispatchQueue.global().asyncAfter(deadline: .now() + clampedDelay) {
+                    self.performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay, result: result)
+                }
+                return
+            }
+            
+            let resp: SNResponse<O> = SNResponse(
+                data: data,
+                response: response,
+                validateStatus: self.validateStatus
+            )
+            self.printDebug("Received response\n\(resp.debugDescription)")
+            result(resp)
         }
         task.resume()
+        } catch {
+            let resp: SNResponse<O> = SNResponse(error: error)
+            printDebug("Request failed to build: \(error)")
+            result(resp)
+        }
+    }
+    
+    private func shouldRetryOnStatus(_ code: Int, method: SNMethod) -> Bool {
+        guard [408, 429].contains(code) || (500...599).contains(code) else { return false }
+        
+        let idempotentMethods: Set<SNMethod> = [.get, .head, .put, .delete]
+        return idempotentMethods.contains(method)
+    }
+    
+    private func shouldRetry(error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == NSURLErrorDomain else {
+            return false
+        }
+        switch nsError.code {
+        case NSURLErrorTimedOut,
+             NSURLErrorNetworkConnectionLost,
+             NSURLErrorNotConnectedToInternet:
+            return true
+        default:
+            return false
+        }
     }
 }
