@@ -42,11 +42,11 @@ struct User: Decodable {
 
 // Con base URL: usa path relativo (sin leading /)
 let request = SNRequest(path: "users/1")
+let response: SNResponse<User> = await network.request(request)
 
 // Sin base URL: usa URL completa
-let request = SNRequest(path: "https://api.example.com/users/1")
-
-let response: SNResponse<User> = await network.request(request)
+// let request = SNRequest(path: "https://api.example.com/users/1")
+// let response: SNResponse<User> = await network.request(request)
 
 switch response.result {
 case .success(let user):
