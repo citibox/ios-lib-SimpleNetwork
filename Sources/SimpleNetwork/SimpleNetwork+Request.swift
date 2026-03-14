@@ -138,6 +138,11 @@ extension SimpleNetworkManager {
             result(resp)
         }
         task.resume()
+        } catch {
+            let resp: SNResponse<O> = SNResponse(error: error)
+            printDebug("Request failed to build: \(error)")
+            result(resp)
+        }
     }
     
     private func shouldRetryOnStatus(_ code: Int, method: SNMethod) -> Bool {
