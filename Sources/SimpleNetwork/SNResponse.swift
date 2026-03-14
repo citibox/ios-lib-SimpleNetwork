@@ -42,6 +42,12 @@ public struct SNResponse<Object: Decodable> {
     }
     
     internal init(error: Error) {
+        // If it's already an SNError, use it directly
+        if let snError = error as? SNError {
+            result = .failure(snError)
+            return
+        }
+        
         switch (error as NSError).code {
         case NSURLErrorNotConnectedToInternet:
             result = .failure(.noInternet)
