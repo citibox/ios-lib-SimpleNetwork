@@ -35,9 +35,9 @@ extension SimpleNetworkManager {
             // Check if status code is valid
             if !validateStatus(httpResponse.statusCode) && retryCount > 0 && shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
                 printDebug("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
-                let clampedDelay = max(0, retryDelay)
+                let clampedDelay = min(max(0, retryDelay), 60.0)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
-                try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
+                try await Task.sleep(nanoseconds: nanos)
                 return await performRequest(request, retryCount: retryCount - 1, retryDelay: retryDelay)
             }
             
@@ -52,10 +52,10 @@ extension SimpleNetworkManager {
             // Check if we should retry
             if retryCount > 0 && shouldRetry(error: error) {
                 printDebug("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
-                let clampedDelay = max(0, retryDelay)
+                let clampedDelay = min(max(0, retryDelay), 60.0)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
                 do {
-                    try await Task.sleep(nanoseconds: min(nanos, UInt64.max))
+                    try await Task.sleep(nanoseconds: nanos)
                 } catch {
                     // If sleep was cancelled (task cancellation), bail out instead of retrying
                     printDebug("Retry sleep cancelled, bailing out")
