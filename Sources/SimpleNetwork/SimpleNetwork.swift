@@ -19,11 +19,18 @@ public class SimpleNetworkManager {
     
     public init(
         base: URL? = nil,
-        session: URLSession = .shared,
+        session: URLSession = URLSession(configuration: .default),
         validateStatus: @escaping (Int) -> Bool = { (200..<300).contains($0) }
     ) {
         self.base = base
         self.session = session
         self.validateStatus = validateStatus
+    }
+
+    /// Cancels all in-flight requests and invalidates the underlying URLSession.
+    ///
+    /// After calling this, the manager cannot be reused.
+    public func cancel() {
+        session.invalidateAndCancel()
     }
 }
