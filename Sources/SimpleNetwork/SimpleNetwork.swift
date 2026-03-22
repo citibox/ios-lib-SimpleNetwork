@@ -15,7 +15,7 @@ public class SimpleNetworkManager {
     internal let session: URLSession
     internal let validateStatus: (Int) -> Bool
     
-    public var debug = false
+    public var logLevel: SNLogLevel = .none
     
     public init(
         base: URL? = nil,

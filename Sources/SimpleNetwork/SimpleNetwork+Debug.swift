@@ -11,12 +11,13 @@ import OSLog
 private let logger = Logger(subsystem: "com.citibox.simplenetwork", category: "HTTP")
 
 internal extension SimpleNetworkManager {
-    func printDebug(_ text: String) {
-        guard debug else { return }
-        logger.debug("\(text, privacy: .public)")
-    }
-
-    func printError(_ text: String) {
-        logger.error("\(text, privacy: .public)")
+    func log(_ message: String, level: SNLogLevel = .info) {
+        guard logLevel != .none, level <= logLevel else { return }
+        switch level {
+        case .debug: logger.debug("\(message, privacy: .public)")
+        case .info:  logger.info("\(message, privacy: .public)")
+        case .error: logger.error("\(message, privacy: .public)")
+        case .none:  break
+        }
     }
 }

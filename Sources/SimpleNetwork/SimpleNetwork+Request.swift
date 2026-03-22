@@ -23,18 +23,18 @@ extension SimpleNetworkManager {
         retryDelay: TimeInterval
     ) async -> SNResponse<O> {
         do {
-            printDebug("Making request\n\(request.debugDescription)")
+            log("Making request\n\(request.debugDescription)", level: .debug)
             let (data, response) = try await session.data(for: request.urlRequest(base: base))
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
-                printDebug("Received response\n\(resp.debugDescription)")
+                log("Received response\n\(resp.debugDescription)", level: .debug)
                 return resp
             }
             
             // Check if status code is valid
             if !validateStatus(httpResponse.statusCode) && retryCount > 0 && shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
-                printError("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
+                log("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)", level: .error)
                 guard retryDelay.isFinite else { return SNResponse(error: SNError.invalidRetryDelay) }
                 let clampedDelay = min(max(0, retryDelay), 60.0)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
@@ -47,12 +47,12 @@ extension SimpleNetworkManager {
                 response: response,
                 validateStatus: validateStatus
             )
-            printDebug("Received response\n\(resp.debugDescription)")
+            log("Received response\n\(resp.debugDescription)", level: .debug)
             return resp
         } catch(let error) {
             // Check if we should retry
             if retryCount > 0 && shouldRetry(error: error) {
-                printError("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
+                log("Request failed with error \(error), retrying... (\(retryCount) attempts left)", level: .error)
                 guard retryDelay.isFinite else { return SNResponse(error: SNError.invalidRetryDelay) }
                 let clampedDelay = min(max(0, retryDelay), 60.0)
                 let nanos = UInt64(clampedDelay * 1_000_000_000)
@@ -60,7 +60,7 @@ extension SimpleNetworkManager {
                     try await Task.sleep(nanoseconds: nanos)
                 } catch {
                     // If sleep was cancelled (task cancellation), bail out instead of retrying
-                    printError("Retry sleep cancelled, bailing out")
+                    log("Retry sleep cancelled, bailing out", level: .error)
                     let resp: SNResponse<O> = SNResponse(error: error)
                     return resp
                 }
@@ -68,7 +68,7 @@ extension SimpleNetworkManager {
             }
             
             let resp: SNResponse<O> = SNResponse(error: error)
-            printDebug("Received response\n\(resp.debugDescription)")
+            log("Received response\n\(resp.debugDescription)", level: .debug)
             return resp
         }
     }
@@ -96,7 +96,7 @@ extension SimpleNetworkManager {
             if let error = error {
                 // Check if we should retry
                 if retryCount > 0 && self.shouldRetry(error: error) {
-                    self.printError("Request failed with error \(error), retrying... (\(retryCount) attempts left)")
+                    self.log("Request failed with error \(error), retrying... (\(retryCount) attempts left)", level: .error)
                     guard retryDelay.isFinite else {
                         let resp: SNResponse<O> = SNResponse(error: SNError.invalidRetryDelay)
                         result(resp)
@@ -110,7 +110,7 @@ extension SimpleNetworkManager {
                 }
                 
                 let resp: SNResponse<O> = SNResponse(error: error)
-                self.printDebug("Received response\n\(resp.debugDescription)")
+                self.log("Received response\n\(resp.debugDescription)", level: .debug)
                 result(resp)
                 return
             }
@@ -118,7 +118,7 @@ extension SimpleNetworkManager {
             // Handle missing response
             guard let httpResponse = response as? HTTPURLResponse else {
                 let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
-                self.printDebug("Received response\n\(resp.debugDescription)")
+                self.log("Received response\n\(resp.debugDescription)", level: .debug)
                 result(resp)
                 return
             }
@@ -128,7 +128,7 @@ extension SimpleNetworkManager {
             
             // Check if status code is valid and retry if needed
             if !self.validateStatus(httpResponse.statusCode) && retryCount > 0 && self.shouldRetryOnStatus(httpResponse.statusCode, method: request.method) {
-                self.printError("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)")
+                self.log("Request failed with status \(httpResponse.statusCode), retrying... (\(retryCount) attempts left)", level: .error)
                 guard retryDelay.isFinite else {
                     let resp: SNResponse<O> = SNResponse(error: SNError.invalidRetryDelay)
                     result(resp)
@@ -146,13 +146,13 @@ extension SimpleNetworkManager {
                 response: response,
                 validateStatus: self.validateStatus
             )
-            self.printDebug("Received response\n\(resp.debugDescription)")
+            self.log("Received response\n\(resp.debugDescription)", level: .debug)
             result(resp)
         }
         task.resume()
         } catch {
             let resp: SNResponse<O> = SNResponse(error: error)
-            printError("Request failed to build: \(error)")
+            log("Request failed to build: \(error)", level: .error)
             result(resp)
         }
     }
