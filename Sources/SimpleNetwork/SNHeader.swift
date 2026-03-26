@@ -26,6 +26,10 @@ public struct SNHeader {
     }
 }
 
+extension SNHeader: CustomStringConvertible {
+    public var description: String { "\(name): \(value)" }
+}
+
 extension SNHeader {
     /// Returns an `Accept` header.
     ///

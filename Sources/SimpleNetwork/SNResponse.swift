@@ -65,6 +65,12 @@ public struct SNResponse<Object: Decodable> {
 
 extension SNResponse: CustomDebugStringConvertible {
     public var debugDescription: String {
-        "<SNResponse \(url?.debugDescription ?? "No URL!")\n\t\(status) - \(result)\n\tHeaders: \(headers)\n\tJSONData: \(( try? JSONSerialization.jsonObject(with: data ?? Data())) ?? "Empty")\n>"
+        let resultStr: String
+        switch result {
+        case .success:              resultStr = "success"
+        case .failure(let error):   resultStr = "\(error)"
+        }
+        let headersStr = headers.map(\.description).joined(separator: ", ")
+        return "<SNResponse \(status) \(resultStr) \(url?.absoluteString ?? "") | headers: [\(headersStr)]>"
     }
 }

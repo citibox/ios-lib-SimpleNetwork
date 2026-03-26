@@ -88,6 +88,7 @@ extension SNRequest {
 
 extension SNRequest: CustomDebugStringConvertible {
     public var debugDescription: String {
-        "<SNRequest\n\t\(method.rawValue) \(path)\n\tHeaders: \(headers)\n\tParameters: \(parameters != nil ? "Present" : "Empty")\n\tbody: \(body?.debugDescription ?? "Empty")\n>"
+        let headersStr = headers.map(\.description).joined(separator: ", ")
+        return "<SNRequest \(method.rawValue) \(path) | headers: [\(headersStr)] | body: \(body != nil ? "\(body!.count)B" : "none")>"
     }
 }

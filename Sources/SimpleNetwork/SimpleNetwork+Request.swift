@@ -23,12 +23,12 @@ extension SimpleNetworkManager {
         retryDelay: TimeInterval
     ) async -> SNResponse<O> {
         do {
-            log("Making request\n\(request.debugDescription)", level: .debug)
+            log("→ \(request.method.rawValue) \(request.path)", level: .debug)
             let (data, response) = try await session.data(for: request.urlRequest(base: base))
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
-                log("Received response\n\(resp.debugDescription)", level: .debug)
+                log(resp.logLine, level: resp.isSuccess ? .debug : .error)
                 return resp
             }
             
@@ -47,7 +47,7 @@ extension SimpleNetworkManager {
                 response: response,
                 validateStatus: validateStatus
             )
-            log("Received response\n\(resp.debugDescription)", level: .debug)
+            log(resp.logLine, level: resp.isSuccess ? .debug : .error)
             return resp
         } catch(let error) {
             // Check if we should retry
@@ -68,7 +68,7 @@ extension SimpleNetworkManager {
             }
             
             let resp: SNResponse<O> = SNResponse(error: error)
-            log("Received response\n\(resp.debugDescription)", level: .debug)
+            log(resp.logLine, level: resp.isSuccess ? .debug : .error)
             return resp
         }
     }
@@ -110,7 +110,7 @@ extension SimpleNetworkManager {
                 }
                 
                 let resp: SNResponse<O> = SNResponse(error: error)
-                self.log("Received response\n\(resp.debugDescription)", level: .debug)
+                self.log(resp.logLine, level: resp.isSuccess ? .debug : .error)
                 result(resp)
                 return
             }
@@ -118,7 +118,7 @@ extension SimpleNetworkManager {
             // Handle missing response
             guard let httpResponse = response as? HTTPURLResponse else {
                 let resp: SNResponse<O> = SNResponse(error: SNError.unknown)
-                self.log("Received response\n\(resp.debugDescription)", level: .debug)
+                self.log(resp.logLine, level: resp.isSuccess ? .debug : .error)
                 result(resp)
                 return
             }
