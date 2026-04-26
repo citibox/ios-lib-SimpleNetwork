@@ -14,7 +14,7 @@ Una librería Swift ligera para realizar peticiones HTTP de forma sencilla. Sopo
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/citibox/ios-lib-SimpleNetwork.git", from: "1.0.0")
+    .package(url: "https://github.com/citibox/ios-lib-SimpleNetwork.git", from: "2.3.0")
 ]
 ```
 
